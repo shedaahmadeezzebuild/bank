@@ -42,14 +42,21 @@ if "messages" not in st.session_state:
 if "bot" not in st.session_state:
     # Initialize the bot with API key from environment or secrets
     try:
-        # Try to get API key from Streamlit secrets (preferred for cloud deployment)
-        api_key = st.secrets.get("MISTRAL_API_KEY", "")
+        # For Streamlit Cloud: use st.secrets (add via web dashboard)
+        # For local: use environment variable or direct key
+        api_key = None
         
-        # If not found in secrets, try environment variable
+        # Try to get from Streamlit secrets first (Cloud deployment)
+        try:
+            api_key = st.secrets.get("MISTRAL_API_KEY") if hasattr(st, 'secrets') else None
+        except:
+            api_key = None
+        
+        # Fallback to environment variable (for Docker/CI-CD)
         if not api_key:
             api_key = os.getenv("MISTRAL_API_KEY", "")
         
-        # Fallback to direct key (only for local development)
+        # Last resort: use hardcoded key (local development only)
         if not api_key:
             api_key = "hKjvYtwfSKR7Ysd7WKvmItCtPL6YfjdR"
         

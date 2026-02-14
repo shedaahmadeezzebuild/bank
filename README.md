@@ -53,20 +53,48 @@ Ensure these files are in your GitHub repository:
 - `hbdb_banking_faqs (2) (1).csv` - FAQ database
 - `.streamlit/config.toml` - Streamlit configuration
 
-### Step 2: Add Secrets on Streamlit Cloud
-1. Go to your Streamlit Cloud app settings
-2. Click "Secrets"
-3. Add the following:
+### Step 2: Add Secrets on Streamlit Cloud (Web Dashboard)
+1. Go to [Streamlit Cloud](https://share.streamlit.io/)
+2. Login with your GitHub account
+3. Click "New app"
+4. Select your GitHub repository, branch, and `streamlit_app.py` as entry point
+5. Click "Deploy"
+6. Once deployed, click the **Settings** icon (gear) → **Secrets**
+7. Add your API key:
+```toml
+MISTRAL_API_KEY = "your_actual_mistral_api_key_here"
+```
+8. The app will automatically rerun with the secret
+
+### Important Notes
+- ⚠️ **Never commit secrets.toml to GitHub**
+- ✅ For local development: Create `.streamlit/secrets.toml` (in `.gitignore`)
+- ✅ For cloud: Use the Streamlit Cloud web dashboard to add secrets
+- The app will automatically use secrets from the dashboard when deployed
+
+### Step 3: Verify Deployment
+Once deployed:
+1. The app will load automatically
+2. You should see "🏦 HBDB Banking Bot" 
+3. Try asking: "How do I open a savings account?"
+4. Get instant responses powered by Mistral AI
+
+## Local Setup with Secrets
+
+For local development with secrets:
+
+1. Create `.streamlit/secrets.toml`:
 ```toml
 MISTRAL_API_KEY = "your_mistral_api_key_here"
 ```
 
-### Step 3: Deploy
-1. Go to [Streamlit Cloud](https://streamlit.io/cloud)
-2. Click "New app"
-3. Select your GitHub repository
-4. Select main branch and `streamlit_app.py` as entry point
-5. Click "Deploy"
+2. Run locally:
+```bash
+streamlit run streamlit_app.py
+```
+
+The secrets file is in `.gitignore` and won't be committed.
+
 
 ## Usage
 
