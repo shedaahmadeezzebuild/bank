@@ -1,5 +1,6 @@
 import pandas as pd
-from mistralai import Mistral
+from mistralai.client import MistralClient
+from mistralai.models.chat_message import ChatMessage
 
 class BankingBot:
     def __init__(self, api_key: str, csv_path: str):
@@ -10,7 +11,7 @@ class BankingBot:
             api_key: Mistral AI API key
             csv_path: Path to the FAQ CSV file
         """
-        self.client = Mistral(api_key=api_key)
+        self.client = MistralClient(api_key=api_key)
         self.model = "mistral-large-latest"
         self.faq_data = self._load_faqs(csv_path)
         self.system_prompt = self._create_system_prompt()
@@ -48,19 +49,18 @@ Instructions:
             Text chunks of the response
         """
         messages = [
-            {
-                "role": "user",
-                "content": user_message
-            }
+            ChatMessage(role="system", content=self.system_prompt),
+            ChatMessage(role="user", content=user_message)
         ]
         
         # Use streaming for real-time response
-        with self.client.messages.stream(
+        response = self.client.chat_stream(
             model=self.model,
             messages=messages,
-            system=self.system_prompt,
             max_tokens=1024,
             temperature=0.7
-        ) as response:
-            for text in response.text_stream:
-                yield text
+        )
+        
+        for chunk in response:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
