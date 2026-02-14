@@ -56,39 +56,43 @@ bot = init_bot()
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat messages
+if "response_needed" not in st.session_state:
+    st.session_state.response_needed = False
+
+# Display all chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Chat input
-user_input = st.chat_input("Ask me about HBDB banking services...")
+# Check if we need to generate a response
+# This happens when a user message was added but no assistant response follows it
+def needs_response():
+    if not st.session_state.messages:
+        return False
+    # Check if last message is from user (not assistant)
+    return st.session_state.messages[-1]["role"] == "user"
 
-if user_input:
-    # Add user message
-    st.session_state.messages.append({"role": "user", "content": user_input})
+# Generate response if needed
+if needs_response():
+    user_message = st.session_state.messages[-1]["content"]
     
-    with st.chat_message("user"):
-        st.markdown(user_input)
-    
-    # Get and display bot response
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
         
         try:
-            # Generate response with timeout protection
-            for chunk in bot.get_response(user_input):
+            # Generate response
+            for chunk in bot.get_response(user_message):
                 if chunk:
                     full_response += chunk
                     message_placeholder.markdown(full_response + "▌")
             
-            # Final display without cursor
+            # Final message without cursor
             if full_response:
                 message_placeholder.markdown(full_response)
             else:
-                message_placeholder.markdown("I apologize, I could not generate a response. Please try again.")
-                full_response = "Error: No response generated"
+                message_placeholder.markdown("I apologize, I could not generate a response.")
+                full_response = "Error: No response"
                 
         except Exception as e:
             error_msg = f"⚠️ Error: {str(e)}"
@@ -97,6 +101,14 @@ if user_input:
     
     # Add response to history
     st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+# Chat input
+user_input = st.chat_input("Ask me about HBDB banking services...")
+
+if user_input:
+    # Add user message and mark that response is needed
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    st.rerun()
 
 # Sidebar
 with st.sidebar:
