@@ -10,29 +10,31 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Professional 3D CSS styling
+# Professional Black & White CSS styling with custom avatars
 st.markdown("""
     <style>
     /* Root colors and backgrounds */
     :root {
-        --primary: #1e3a8a;
-        --primary-light: #3b82f6;
-        --accent: #f59e0b;
-        --success: #10b981;
-        --bg: #f8fafc;
-        --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        --card-hover: 0 15px 40px rgba(0,0,0,0.15);
+        --primary: #000000;
+        --primary-light: #1a1a1a;
+        --accent: #ffffff;
+        --dark-gray: #2d2d2d;
+        --light-gray: #f5f5f5;
+        --text-dark: #1a1a1a;
+        --text-light: #ffffff;
+        --card-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        --card-hover: 0 15px 40px rgba(0,0,0,0.2);
     }
     
     /* Main background */
     .main {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
         padding: 2rem;
     }
     
     /* Title styling */
     h1 {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        background: linear-gradient(135deg, #000000 0%, #2d2d2d 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -40,58 +42,80 @@ st.markdown("""
         font-size: 2.8rem !important;
         text-shadow: 0 2px 4px rgba(0,0,0,0.05);
         margin-bottom: 0.5rem !important;
+        letter-spacing: -1px;
     }
     
     /* Subtitle */
     .subtitle {
-        color: #64748b;
+        color: #555555;
         font-size: 1.1rem;
         font-weight: 500;
         margin-bottom: 2rem;
         letter-spacing: 0.5px;
     }
     
-    /* Chat messages - 3D card effect */
+    /* Chat container */
     .stChatMessage {
         background: white;
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 16px;
         margin-bottom: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        border-left: 4px solid #3b82f6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-left: 5px solid #000000;
         transition: all 0.3s ease;
     }
     
     .stChatMessage:hover {
-        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        transform: translateY(-3px);
+        border-left-color: #2d2d2d;
     }
     
-    /* User message styling */
+    /* Custom user avatar - Person icon */
+    [data-testid="chatAvatarIcon-user"] {
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%) !important;
+        border-radius: 10px !important;
+        font-size: 1.5rem !important;
+    }
+    
+    /* Custom assistant avatar - Robot/AI icon */
+    [data-testid="chatAvatarIcon-assistant"] {
+        background: linear-gradient(135deg, #ffffff 0%, #e8e8e8 100%) !important;
+        border: 2px solid #000000 !important;
+        border-radius: 10px !important;
+        font-size: 1.5rem !important;
+        color: #000000 !important;
+    }
+    
+    /* Chat message text */
     [data-testid="chatAvatarIcon-user"] ~ div {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        border-radius: 8px !important;
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+        color: white !important;
+        border-radius: 12px !important;
+        padding: 12px !important;
     }
     
-    /* Assistant message styling */
     [data-testid="chatAvatarIcon-assistant"] ~ div {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        border-radius: 8px !important;
+        background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%) !important;
+        color: #1a1a1a !important;
+        border-radius: 12px !important;
+        padding: 12px !important;
+        border: 1px solid #e0e0e0;
     }
     
     /* Chat input area */
     .stChatInputContainer {
         background: white;
-        border: 2px solid #e2e8f0;
-        border-radius: 12px;
+        border: 2px solid #000000;
+        border-radius: 16px;
         padding: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         transition: all 0.3s ease;
     }
     
     .stChatInputContainer:focus-within {
-        border-color: #3b82f6;
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+        border-color: #000000;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
         transform: translateY(-2px);
     }
     
@@ -100,11 +124,16 @@ st.markdown("""
         font-size: 1rem;
         border: none !important;
         padding: 8px 4px;
+        color: #1a1a1a;
+    }
+    
+    .stChatInputContainer input::placeholder {
+        color: #999999;
     }
     
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e3a8a 0%, #2563eb 100%);
+        background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
     }
     
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
@@ -113,125 +142,148 @@ st.markdown("""
     
     /* Sidebar section headers */
     [data-testid="stSidebar"] h3 {
-        color: #fff;
+        color: #ffffff;
         font-weight: 700;
         font-size: 1.2rem;
         margin-top: 1.5rem;
         margin-bottom: 1rem;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 2px solid rgba(255,255,255,0.2);
+        letter-spacing: 1px;
+        border-bottom: 2px solid rgba(255,255,255,0.3);
         padding-bottom: 0.5rem;
     }
     
     /* Sidebar text */
     [data-testid="stSidebar"] p {
-        color: #e0e7ff;
+        color: #d0d0d0;
         font-size: 0.95rem;
         line-height: 1.6;
     }
     
-    /* Buttons - enhanced 3D effect */
+    /* Buttons - Black & White elegant */
     .stButton > button {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
         color: white;
-        border: none;
-        border-radius: 8px;
+        border: 2px solid #000000;
+        border-radius: 12px;
         padding: 12px 24px;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.95rem;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
         cursor: pointer;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 1px;
     }
     
     .stButton > button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
-        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 28px rgba(0,0,0,0.3);
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        border-color: #ffffff;
     }
     
     .stButton > button:active {
         transform: translateY(-1px);
     }
     
-    /* Dark buttons for sidebar */
+    /* Sidebar buttons - White on black */
     [data-testid="stSidebar"] .stButton > button {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        background: linear-gradient(135deg, #ffffff 0%, #e8e8e8 100%);
+        color: #000000;
+        border: 2px solid #ffffff;
+        box-shadow: 0 6px 16px rgba(255,255,255,0.2);
     }
     
     [data-testid="stSidebar"] .stButton > button:hover {
-        background: linear-gradient(135deg, #de8e27 0%, #b45309 100%);
-        box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        color: #ffffff;
+        border-color: #ffffff;
+        box-shadow: 0 10px 28px rgba(0,0,0,0.5);
     }
     
     /* Success message */
     .stSuccess {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border-left: 4px solid #10b981;
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        border-left: 4px solid #ffffff;
         border-radius: 8px;
         padding: 12px;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     
     /* Info message */
     .stInfo {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        border-left: 4px solid #3b82f6;
+        background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+        border-left: 4px solid #000000;
         border-radius: 8px;
         padding: 12px;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        color: #1a1a1a;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     
     /* Divider */
     hr {
         border: none;
-        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+        background: linear-gradient(90deg, transparent, rgba(0,0,0,0.3), transparent);
         height: 2px;
         margin: 1.5rem 0;
     }
     
-    /* Status indicator */
+    /* Status badge */
     .status-badge {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
         color: white;
-        padding: 6px 12px;
+        padding: 8px 16px;
         border-radius: 20px;
         font-size: 0.85rem;
-        font-weight: 600;
+        font-weight: 700;
         display: inline-block;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.2);
     }
     
     /* Links */
     a {
-        color: #3b82f6;
+        color: #000000;
         text-decoration: none;
-        font-weight: 600;
+        font-weight: 700;
         transition: color 0.3s ease;
+        border-bottom: 2px solid #000000;
     }
     
     a:hover {
-        color: #2563eb;
-        text-decoration: underline;
+        color: #2d2d2d;
+        border-bottom-color: #2d2d2d;
     }
     
-    /* Markdown text improvements */
+    /* Markdown text */
     [data-testid="stMarkdownContainer"] {
-        color: #1f2937;
+        color: #1a1a1a;
         font-size: 0.95rem;
-        line-height: 1.6;
+        line-height: 1.7;
+    }
+    
+    /* Header card background */
+    .header-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+        border: 2px solid #000000;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    
+    /* Elegant spacing */
+    .spacer {
+        height: 1.5rem;
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.markdown(
-    '<div style="padding: 20px; background: linear-gradient(135deg, #fff 0%, #f0f9ff 100%); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 2rem;">'
-    '<h1 style="margin: 0; padding: 0;">🏦 HBDB Banking Bot</h1>'
-    '<p class="subtitle" style="margin: 8px 0 0 0; color: #64748b;">Your 24/7 Banking Assistant - Powered by Mistral AI</p>'
+    '<div style="padding: 24px; background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%); border: 2px solid #000000; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); margin-bottom: 2rem;">'
+    '<h1 style="margin: 0; padding: 0; text-align: center;">💳 HBDB Banking Bot</h1>'
+    '<p class="subtitle" style="margin: 12px 0 0 0; color: #2d2d2d; text-align: center; font-weight: 600; letter-spacing: 0.5px;">Your Professional 24/7 Banking Assistant</p>'
     '</div>',
     unsafe_allow_html=True
 )
@@ -282,10 +334,14 @@ if "messages" not in st.session_state:
 if "response_needed" not in st.session_state:
     st.session_state.response_needed = False
 
-# Display all chat messages
+# Display all chat messages with custom emoji avatars
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if message["role"] == "user":
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(message["content"])
+    else:
+        with st.chat_message("assistant", avatar="🤖"):
+            st.markdown(message["content"])
 
 # Check if we need to generate a response
 def needs_response():
@@ -329,14 +385,14 @@ if user_input:
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### 📚 About This Bot")
+    st.markdown("### � About This Bot")
     st.markdown(
-        "Intelligent banking assistant powered by **Mistral AI**. Get instant answers to all your HBDB banking questions."
+        "Advanced banking assistant powered by **Mistral AI**. Get instant answers to all your HBDB banking questions 24/7."
     )
     
     st.markdown("---")
     
-    st.markdown("### ❓ Quick Questions")
+    st.markdown("### ❔ Quick Questions")
     
     questions = [
         "How do I open a savings account?",
@@ -353,21 +409,21 @@ with st.sidebar:
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🗑️ Clear", use_container_width=True):
+        if st.button("🔄 Clear Chat", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
     
     with col2:
         st.markdown(
-            '<span style="display: flex; align-items: center; justify-content: center; padding: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 8px; font-weight: 600; font-size: 0.85rem;">✓ Ready</span>',
+            '<span style="display: flex; align-items: center; justify-content: center; padding: 8px; background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; border: 1px solid #ffffff; border-radius: 8px; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">● Ready</span>',
             unsafe_allow_html=True
         )
     
     st.markdown("---")
     
     st.markdown(
-        "<p style='text-align: center; color: #cbd5e1; font-size: 0.85rem;'>"
-        "🚀 <strong>Professional Banking Assistant</strong><br/>"
+        "<p style='text-align: center; color: #a0a0a0; font-size: 0.85rem; line-height: 1.6;'>"
+        "<strong>🏦 Professional Banking<br/>Assistant</strong><br/>"
         "Powered by Advanced AI<br/>"
         "© 2026 HBDB"
         "</p>",
