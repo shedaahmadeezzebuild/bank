@@ -58,16 +58,30 @@ Instructions:
             }
         ]
         
-        # Use streaming for real-time response
-        response = self.client.messages.stream(
-            model=self.model,
-            messages=messages,
-            max_tokens=1024,
-            temperature=0.7
-        )
-        
-        for chunk in response:
-            if hasattr(chunk, 'data') and hasattr(chunk.data, 'choices') and len(chunk.data.choices) > 0:
-                if hasattr(chunk.data.choices[0], 'delta') and hasattr(chunk.data.choices[0].delta, 'content'):
-                    if chunk.data.choices[0].delta.content:
+        try:
+            # Use streaming for real-time response
+            response = self.client.chat.stream(
+                model=self.model,
+                messages=messages,
+                max_tokens=1024,
+                temperature=0.7
+            )
+            
+            # Stream the response
+            for chunk in response:
+                if chunk.data.choices and len(chunk.data.choices) > 0:
+                    if hasattr(chunk.data.choices[0], 'delta') and chunk.data.choices[0].delta.content:
                         yield chunk.data.choices[0].delta.content
+        except Exception as e:
+            # Fallback to non-streaming if streaming fails
+            try:
+                response = self.client.chat.complete(
+                    model=self.model,
+                    messages=messages,
+                    max_tokens=1024,
+                    temperature=0.7
+                )
+                yield response.choices[0].message.content
+            except Exception as fallback_error:
+                yield f"Error: {str(fallback_error)}"
+
