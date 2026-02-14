@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from mistralai import Mistral
 
 class BankingBot:
@@ -10,6 +11,8 @@ class BankingBot:
             api_key: Mistral AI API key
             csv_path: Path to the FAQ CSV file
         """
+        self.api_key = api_key
+        self.csv_path = csv_path
         self.client = Mistral(api_key=api_key)
         self.model = "mistral-large-latest"
         self.faq_data = self._load_faqs(csv_path)
@@ -17,6 +20,11 @@ class BankingBot:
     
     def _load_faqs(self, csv_path: str) -> pd.DataFrame:
         """Load FAQ data from CSV file."""
+        # Handle both relative and absolute paths
+        if not os.path.exists(csv_path):
+            # Try relative path
+            csv_path = csv_path.replace("(2) (1)", "(2) (1)").replace(" ", " ")
+        
         df = pd.read_csv(csv_path)
         return df
     
@@ -25,7 +33,10 @@ class BankingBot:
         faq_text = "You are a helpful HBDB Banking Assistant. Here is the banking FAQ knowledge base:\n\n"
         
         for idx, row in self.faq_data.iterrows():
-            faq_text += f"Q: {row['Question']}\nA: {row['Answer']}\n\n"
+            question = str(row.get('Question', '')).strip()
+            answer = str(row.get('Answer', '')).strip()
+            if question and answer:
+                faq_text += f"Q: {question}\nA: {answer}\n\n"
         
         faq_text += """
 Instructions:
@@ -47,18 +58,18 @@ Instructions:
         Yields:
             Text chunks of the response
         """
-        messages = [
-            {
-                "role": "system",
-                "content": self.system_prompt
-            },
-            {
-                "role": "user",
-                "content": user_message
-            }
-        ]
-        
         try:
+            messages = [
+                {
+                    "role": "system",
+                    "content": self.system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": user_message
+                }
+            ]
+            
             # Use streaming for real-time response
             response = self.client.chat.stream(
                 model=self.model,
@@ -69,9 +80,16 @@ Instructions:
             
             # Stream the response
             for chunk in response:
-                if chunk.data.choices and len(chunk.data.choices) > 0:
-                    if hasattr(chunk.data.choices[0], 'delta') and chunk.data.choices[0].delta.content:
-                        yield chunk.data.choices[0].delta.content
+                try:
+                    if hasattr(chunk, 'data') and chunk.data and hasattr(chunk.data, 'choices'):
+                        if chunk.data.choices and len(chunk.data.choices) > 0:
+                            choice = chunk.data.choices[0]
+                            if hasattr(choice, 'delta') and choice.delta:
+                                if hasattr(choice.delta, 'content') and choice.delta.content:
+                                    yield choice.delta.content
+                except (AttributeError, IndexError):
+                    continue
+                    
         except Exception as e:
             # Fallback to non-streaming if streaming fails
             try:
@@ -81,7 +99,10 @@ Instructions:
                     max_tokens=1024,
                     temperature=0.7
                 )
-                yield response.choices[0].message.content
+                if response and hasattr(response, 'choices') and response.choices:
+                    yield response.choices[0].message.content
             except Exception as fallback_error:
-                yield f"Error: {str(fallback_error)}"
+                error_msg = f"I apologize, but I encountered an error processing your request. Please try again in a moment."
+                yield error_msg
+
 

@@ -40,14 +40,28 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "bot" not in st.session_state:
-    # Initialize the bot with API key and CSV file
-    api_key = "hKjvYtwfSKR7Ysd7WKvmItCtPL6YfjdR"
-    csv_path = "hbdb_banking_faqs (2) (1).csv"
-    
-    if os.path.exists(csv_path):
-        st.session_state.bot = BankingBot(api_key=api_key, csv_path=csv_path)
-    else:
-        st.error(f"CSV file not found: {csv_path}")
+    # Initialize the bot with API key from environment or secrets
+    try:
+        # Try to get API key from Streamlit secrets (preferred for cloud deployment)
+        api_key = st.secrets.get("MISTRAL_API_KEY", "")
+        
+        # If not found in secrets, try environment variable
+        if not api_key:
+            api_key = os.getenv("MISTRAL_API_KEY", "")
+        
+        # Fallback to direct key (only for local development)
+        if not api_key:
+            api_key = "hKjvYtwfSKR7Ysd7WKvmItCtPL6YfjdR"
+        
+        csv_path = "hbdb_banking_faqs (2) (1).csv"
+        
+        if os.path.exists(csv_path):
+            st.session_state.bot = BankingBot(api_key=api_key, csv_path=csv_path)
+        else:
+            st.error(f"❌ CSV file not found: {csv_path}")
+            st.stop()
+    except Exception as e:
+        st.error(f"❌ Failed to initialize bot: {str(e)}")
         st.stop()
 
 # Display chat messages
@@ -68,12 +82,17 @@ if prompt := st.chat_input("Ask me about HBDB banking services..."):
         message_placeholder = st.empty()
         full_response = ""
         
-        # Stream the response
-        for chunk in st.session_state.bot.get_response(prompt):
-            full_response += chunk
-            message_placeholder.markdown(full_response + "▌")
-        
-        message_placeholder.markdown(full_response)
+        try:
+            # Stream the response
+            for chunk in st.session_state.bot.get_response(prompt):
+                full_response += chunk
+                message_placeholder.markdown(full_response + "▌")
+            
+            message_placeholder.markdown(full_response)
+        except Exception as e:
+            error_message = f"⚠️ Error: {str(e)}"
+            message_placeholder.markdown(error_message)
+            full_response = error_message
     
     # Add bot response to chat history
     st.session_state.messages.append({"role": "assistant", "content": full_response})
@@ -119,3 +138,4 @@ with st.sidebar:
     <small>Powered by Mistral AI</small>
     </div>
     """, unsafe_allow_html=True)
+

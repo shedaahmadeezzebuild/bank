@@ -10,3 +10,4 @@ build/
 .streamlit/
 .DS_Store
 *.env
+.streamlit/secrets.toml
