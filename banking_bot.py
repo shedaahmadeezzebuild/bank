@@ -11,6 +11,9 @@ class BankingBot:
             api_key: Mistral AI API key
             csv_path: Path to the FAQ CSV file
         """
+        if not api_key:
+            raise ValueError("API key is required")
+        
         self.api_key = api_key
         self.csv_path = csv_path
         self.client = Mistral(api_key=api_key)
@@ -20,37 +23,30 @@ class BankingBot:
     
     def _load_faqs(self, csv_path: str) -> pd.DataFrame:
         """Load FAQ data from CSV file."""
-        # Handle both relative and absolute paths
         if not os.path.exists(csv_path):
-            # Try relative path
-            csv_path = csv_path.replace("(2) (1)", "(2) (1)").replace(" ", " ")
+            raise FileNotFoundError(f"CSV file not found: {csv_path}")
         
         df = pd.read_csv(csv_path)
         return df
     
     def _create_system_prompt(self) -> str:
         """Create system prompt with FAQ context."""
-        faq_text = "You are a helpful HBDB Banking Assistant. Here is the banking FAQ knowledge base:\n\n"
+        # Shorter system prompt to reduce token usage
+        faq_text = "You are a helpful HBDB Banking Assistant. Answer banking questions based on this FAQ knowledge base:\n\n"
         
-        for idx, row in self.faq_data.iterrows():
+        # Limit to first 30 FAQs to reduce token size
+        for idx, row in self.faq_data.head(30).iterrows():
             question = str(row.get('Question', '')).strip()
             answer = str(row.get('Answer', '')).strip()
             if question and answer:
-                faq_text += f"Q: {question}\nA: {answer}\n\n"
+                faq_text += f"{question}: {answer}\n"
         
-        faq_text += """
-Instructions:
-1. Answer banking questions based on the provided FAQ knowledge base
-2. If the question is not covered in the FAQs, provide general banking guidance
-3. Always be professional and helpful
-4. For specific account details or urgent issues, direct users to contact customer service
-5. Keep responses concise and clear
-"""
+        faq_text += "\nBe concise, professional, and helpful."
         return faq_text
     
     def get_response(self, user_message: str):
         """
-        Get a streaming response from the bot.
+        Get a response from the bot.
         
         Args:
             user_message: User's question or message
@@ -58,51 +54,32 @@ Instructions:
         Yields:
             Text chunks of the response
         """
+        messages = [
+            {
+                "role": "user",
+                "content": f"{self.system_prompt}\n\nQuestion: {user_message}"
+            }
+        ]
+        
         try:
-            messages = [
-                {
-                    "role": "system",
-                    "content": self.system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": user_message
-                }
-            ]
-            
-            # Use streaming for real-time response
-            response = self.client.chat.stream(
+            # Use the simple complete method
+            response = self.client.chat.complete(
                 model=self.model,
                 messages=messages,
-                max_tokens=1024,
-                temperature=0.7
+                max_tokens=512,
+                temperature=0.5
             )
             
-            # Stream the response
-            for chunk in response:
-                try:
-                    if hasattr(chunk, 'data') and chunk.data and hasattr(chunk.data, 'choices'):
-                        if chunk.data.choices and len(chunk.data.choices) > 0:
-                            choice = chunk.data.choices[0]
-                            if hasattr(choice, 'delta') and choice.delta:
-                                if hasattr(choice.delta, 'content') and choice.delta.content:
-                                    yield choice.delta.content
-                except (AttributeError, IndexError):
-                    continue
-                    
+            # Extract and yield the response
+            if response and hasattr(response, 'choices') and response.choices:
+                content = response.choices[0].message.content
+                # Yield in chunks for streaming effect
+                words = content.split()
+                for word in words:
+                    yield word + " "
+            else:
+                yield "I apologize, I could not generate a response."
+                
         except Exception as e:
-            # Fallback to non-streaming if streaming fails
-            try:
-                response = self.client.chat.complete(
-                    model=self.model,
-                    messages=messages,
-                    max_tokens=1024,
-                    temperature=0.7
-                )
-                if response and hasattr(response, 'choices') and response.choices:
-                    yield response.choices[0].message.content
-            except Exception as fallback_error:
-                error_msg = f"I apologize, but I encountered an error processing your request. Please try again in a moment."
-                yield error_msg
-
-
+            error_msg = f"I apologize, but I'm unable to process your request at the moment. Please try again later."
+            yield error_msg
