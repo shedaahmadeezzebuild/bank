@@ -1,7 +1,6 @@
 import streamlit as st
 from banking_bot import BankingBot
 import os
-import sys
 
 # Page configuration - must be first
 st.set_page_config(
@@ -10,66 +9,52 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
-st.markdown("""
-    <style>
-    .main { background-color: #f5f5f5; }
-    </style>
-""", unsafe_allow_html=True)
-
-# Title - always show this
 st.title("🏦 HBDB Banking Bot")
 st.markdown("Your 24/7 Banking Assistant - Powered by Mistral AI")
 
-# Debug: Show what we're working with
-debug_mode = os.getenv("DEBUG", "false").lower() == "true"
-
-# Get API key
+# Get API key - try multiple sources
 api_key = None
 
-# Try environment variable first
+# 1. Try environment variable (for cloud/Docker)
 api_key = os.getenv("MISTRAL_API_KEY")
+if api_key:
+    st.sidebar.success("✓ API Key from environment")
 
-# Try secrets if environment variable not found
+# 2. Try Streamlit secrets (for Cloud)
 if not api_key:
     try:
-        api_key = st.secrets.get("MISTRAL_API_KEY", None)
+        api_key = st.secrets.get("MISTRAL_API_KEY")
+        if api_key:
+            st.sidebar.success("✓ API Key from secrets")
     except:
         pass
 
-# Hardcoded fallback for testing
+# 3. Hardcoded fallback for testing
 if not api_key:
     api_key = "hKjvYtwfSKR7Ysd7WKvmItCtPL6YfjdR"
+    st.sidebar.info("ℹ️ Using default API key")
 
-# Check CSV file
-csv_files = [
-    "hbdb_banking_faqs (2) (1).csv",
-    "hbdb_banking_faqs.csv"
-]
-
-csv_path = None
-for csv_file in csv_files:
-    if os.path.exists(csv_file):
-        csv_path = csv_file
-        break
-
-if not csv_path:
-    st.error("❌ **ERROR: FAQ CSV file not found!**")
-    st.info("Looking for: " + " or ".join(csv_files))
+# Check CSV file exists
+csv_path = "hbdb_banking_faqs (2) (1).csv"
+if not os.path.exists(csv_path):
+    st.error(f"❌ CSV file not found: {csv_path}")
     st.stop()
+
+# Initialize bot
+@st.cache_resource
+def init_bot():
+    try:
+        bot = BankingBot(api_key=api_key, csv_path=csv_path)
+        return bot
+    except Exception as e:
+        st.error(f"❌ Failed to initialize bot: {str(e)}")
+        st.stop()
+
+bot = init_bot()
 
 # Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-if "bot" not in st.session_state:
-    try:
-        st.session_state.bot = BankingBot(api_key=api_key, csv_path=csv_path)
-    except Exception as e:
-        st.error(f"❌ **Failed to initialize bot:** {str(e)}")
-        if debug_mode:
-            st.error(f"Full error: {repr(e)}")
-        st.stop()
 
 # Display chat messages
 for message in st.session_state.messages:
@@ -77,60 +62,68 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Chat input
-if prompt := st.chat_input("Ask me about HBDB banking services..."):
+user_input = st.chat_input("Ask me about HBDB banking services...")
+
+if user_input:
     # Add user message
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append({"role": "user", "content": user_input})
     
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(user_input)
     
-    # Get bot response
+    # Get and display bot response
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
         
         try:
-            for chunk in st.session_state.bot.get_response(prompt):
-                full_response += chunk
-                message_placeholder.markdown(full_response + "▌")
+            # Generate response with timeout protection
+            for chunk in bot.get_response(user_input):
+                if chunk:
+                    full_response += chunk
+                    message_placeholder.markdown(full_response + "▌")
             
-            message_placeholder.markdown(full_response)
+            # Final display without cursor
+            if full_response:
+                message_placeholder.markdown(full_response)
+            else:
+                message_placeholder.markdown("I apologize, I could not generate a response. Please try again.")
+                full_response = "Error: No response generated"
+                
         except Exception as e:
             error_msg = f"⚠️ Error: {str(e)}"
             message_placeholder.markdown(error_msg)
             full_response = error_msg
     
-    # Add bot response to history
+    # Add response to history
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### 📚 About This Bot")
-    st.markdown("""
-    Banking assistant powered by Mistral AI.
-    
-    **Features:**
-    - 📋 Instant answers
-    - 🔒 Secure chats
-    - 🚀 Real-time responses
-    """)
+    st.markdown("### 📚 About")
+    st.markdown("Banking assistant powered by Mistral AI")
     
     st.markdown("---")
-    st.markdown("### ❓ Try asking:")
+    st.markdown("### ❓ Quick Questions")
     
-    example_qs = [
+    questions = [
         "How do I open a savings account?",
         "What is HBDB Premier?",
         "How do I reset my password?"
     ]
     
-    for q in example_qs:
-        if st.button(q, key=q):
+    for q in questions:
+        if st.button(q, key=f"btn_{q}", use_container_width=True):
             st.session_state.messages.append({"role": "user", "content": q})
             st.rerun()
     
-    if st.button("🗑️ Clear Chat"):
+    st.markdown("---")
+    
+    if st.button("🗑️ Clear Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
+    
+    st.markdown("---")
+    st.markdown("**Status:** ✓ Ready")
 
 
